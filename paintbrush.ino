@@ -43,21 +43,21 @@ void loop() {
   }
 
   //listen for button presses
-  if (buttonSingleClicked()) {
+  if (buttonSingleClicked()) {//create or recolor brushes
     if (isBrush) {//change to next brush color
       byte nextColor = (faceColors[0] + 1) % 6;//determine the next color
       FOREACH_FACE(f) { //paint all faces that color
         faceColors[f] = nextColor;
       }
     } else {
-      byte randomColor = random(5);
+      byte randomColor = random(5);//just choose a random color
       FOREACH_FACE(f) { //paint all faces that color
         faceColors[f] = randomColor;
       }
     }
   }
 
-  if (buttonLongPressed()) {
+  if (buttonLongPressed()) {//reset the blink to a blank canvas
     isBrush = false;
     FOREACH_FACE(f) {
       faceColors[f] = 6;
@@ -80,15 +80,15 @@ void loop() {
 
 void canvasDisplay() {
   FOREACH_FACE(f) {
-    if (faceColors[f] < 6) {
+    if (faceColors[f] < 6) {//colored faces are at medium brightness
       setColorOnFace(makeColorHSB(colorHues[faceColors[f]], 255, 150), f);
-    } else {
+    } else {//blank faces are at a really minimal brightness
       setColorOnFace(makeColorHSB(0, 0, 40), f);
     }
   }
 }
 
-void brushDisplay() {
+void brushDisplay() {//just show the color on full blast
   setColor(makeColorHSB(colorHues[faceColors[0]], 255, 255));
 }
 
