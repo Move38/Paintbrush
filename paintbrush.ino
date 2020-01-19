@@ -13,12 +13,23 @@ void loop() {
   if (!isBrush) {
 
     //look for neighboring paint brushes
+    // or neighboring paint
+    // only paint brushes can paint over painted faces,
+    // but paint can spread from painted canvas to blank canvas
     FOREACH_FACE(f) {
       if (!isValueReceivedOnFaceExpired(f)) {//neighbor!
         byte neighborData = getLastValueReceivedOnFace(f);
         if (getBrush(neighborData) == 1) { //this neighbor is a brush
           byte neighborColor = getColor(neighborData);
           if (faceColors[f] != neighborColor) {
+            faceColors[f] = neighborColor;
+          }
+        }
+        else {
+          // not a brush, but could paint us
+          if(faceColors[f] == 6) {
+            // this is blank canvas, take on our neighbors color
+            byte neighborColor = getColor(neighborData);
             faceColors[f] = neighborColor;
           }
         }
@@ -99,4 +110,3 @@ byte getBrush(byte data) {
 byte getColor(byte data) {
   return (data & 7);
 }
-
