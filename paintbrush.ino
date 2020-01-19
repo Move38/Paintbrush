@@ -3,6 +3,10 @@ byte colorHues[6] = {30, 60, 100, 140, 200, 220};
 byte faceColors[6] = {6, 6, 6, 6, 6, 6};
 bool isBrush = false;
 
+Timer brushCycle;
+#define BRUSH_CYCLE_DURATION 100
+byte brushFace = 0;
+
 void setup() {
   randomize();
 }
@@ -80,16 +84,27 @@ void loop() {
 
 void canvasDisplay() {
   FOREACH_FACE(f) {
-    if (faceColors[f] < 6) {//colored faces are at medium brightness
-      setColorOnFace(makeColorHSB(colorHues[faceColors[f]], 255, 150), f);
-    } else {//blank faces are at a really minimal brightness
-      setColorOnFace(makeColorHSB(0, 0, 40), f);
+    if (faceColors[f] < 6) {//colored faces are at full brightness
+      setColorOnFace(makeColorHSB(colorHues[faceColors[f]], 255, 255), f);
+    } else {//blank faces are at 0 brightness
+      setColorOnFace(makeColorHSB(0, 0, 0), f);
     }
   }
 }
 
-void brushDisplay() {//just show the color on full blast
-  setColor(makeColorHSB(colorHues[faceColors[0]], 255, 255));
+void brushDisplay() {
+  //  Option 1: simple pulse for brush
+  //  setColor(makeColorHSB(colorHues[faceColors[0]], 255, 63 + (3 * sin8_C(millis()/15))/4));
+
+  //  wipe the face with the color chasing it's tail
+  //  slight hue offset to feel painterly
+  if(brushCycle.isExpired()) {
+    brushFace = (brushFace + 1) % 6;
+    brushCycle.set(BRUSH_CYCLE_DURATION);
+  }
+  FOREACH_FACE(f) {
+    setColorOnFace(makeColorHSB((colorHues[faceColors[f]] + 2*f)%255, 255, 255), (brushFace + f) % 6); 
+  }
 }
 
 byte getBrush(byte data) {
@@ -99,4 +114,3 @@ byte getBrush(byte data) {
 byte getColor(byte data) {
   return (data & 7);
 }
-
