@@ -1,6 +1,6 @@
-byte colorHues[6] = {30, 60, 100, 140, 200, 220};
+byte colorHues[7] = {0, 30, 60, 100, 140, 200, 220};
 
-byte faceColors[6] = {6, 6, 6, 6, 6, 6};
+byte faceColors[6] = {0, 0, 0, 0, 0, 0};
 bool isBrush = false;
 
 void setup() {
@@ -27,7 +27,7 @@ void loop() {
         }
         else {
           // not a brush, but could paint us
-          if(faceColors[f] == 6) {
+          if (faceColors[f] == 0) {
             // this is blank canvas, take on our neighbors color
             byte neighborColor = getColor(neighborData);
             faceColors[f] = neighborColor;
@@ -37,7 +37,7 @@ void loop() {
     }
 
     //now that I've maybe changed color, do I become a brush?
-    if (faceColors[0] < 6) { //face 0 has a real color
+    if (faceColors[0] > 0) { //face 0 has a real color
       byte brushCheck = faceColors[0];//save that color as the reference
       byte brushCheckCount = 0;
 
@@ -56,12 +56,12 @@ void loop() {
   //listen for button presses
   if (buttonSingleClicked()) {//create or recolor brushes
     if (isBrush) {//change to next brush color
-      byte nextColor = (faceColors[0] + 1) % 6;//determine the next color
+      byte nextColor = (faceColors[0] % 6) + 1;//determine the next color
       FOREACH_FACE(f) { //paint all faces that color
         faceColors[f] = nextColor;
       }
     } else {
-      byte randomColor = random(5);//just choose a random color
+      byte randomColor = random(5) + 1;//just choose a random color
       FOREACH_FACE(f) { //paint all faces that color
         faceColors[f] = randomColor;
       }
@@ -71,7 +71,7 @@ void loop() {
   if (buttonLongPressed()) {//reset the blink to a blank canvas
     isBrush = false;
     FOREACH_FACE(f) {
-      faceColors[f] = 6;
+      faceColors[f] = 0;
     }
   }
 
@@ -91,7 +91,7 @@ void loop() {
 
 void canvasDisplay() {
   FOREACH_FACE(f) {
-    if (faceColors[f] < 6) {//colored faces are at medium brightness
+    if (faceColors[f] > 0) {//colored faces are at medium brightness
       setColorOnFace(makeColorHSB(colorHues[faceColors[f]], 255, 150), f);
     } else {//blank faces are at a really minimal brightness
       setColorOnFace(makeColorHSB(0, 0, 40), f);
