@@ -1,3 +1,6 @@
+enum wipeStates {INERT, WIPING, RESOLVE};
+byte wipeState = INERT;
+
 byte colorHues[7] = {0, 30, 60, 100, 140, 200, 220};
 
 byte faceColors[6] = {0, 0, 0, 0, 0, 0};
@@ -9,6 +12,33 @@ void setup() {
 
 void loop() {
 
+  switch (wipeState) {
+    case INERT:
+      inertLoop();
+      break;
+    case WIPING:
+      wipingLoop();
+      break;
+    case RESOLVE:
+      resolveLoop();
+      break;
+  }
+
+  //send data
+  FOREACH_FACE(f) {
+    byte sendData = (isBrush << 5) + (wipeState << 3) + (faceColors[f]);
+    setValueSentOnFace(sendData, f);
+  }
+
+  //do display
+  if (isBrush) {
+    brushDisplay();
+  } else {
+    canvasDisplay();
+  }
+}
+
+void inertLoop() {
   //do paint logic
   if (!isBrush) {
 
@@ -61,6 +91,7 @@ void loop() {
         faceColors[f] = nextColor;
       }
     } else {
+      isBrush = true;
       byte randomColor = random(5) + 1;//just choose a random color
       FOREACH_FACE(f) { //paint all faces that color
         faceColors[f] = randomColor;
@@ -68,24 +99,52 @@ void loop() {
     }
   }
 
-  if (buttonLongPressed()) {//reset the blink to a blank canvas
+  if (buttonLongPressed()) {//if long-pressed, begin wiping
+    wipeState = WIPING;
+  }
+
+  FOREACH_FACE(f) {//check around for anyone in WIPING
+    if (!isValueReceivedOnFaceExpired(f)) {//neighbor!
+      if (getWipeState(getLastValueReceivedOnFace(f)) == WIPING) {
+        wipeState = WIPING;
+      }
+    }
+  }
+}
+
+void wipingLoop() {
+  bool canResolve = true;//we default to this, but revert it in the loop below if we need to
+
+  FOREACH_FACE(f) {//check around for anyone still INERT
+    if (!isValueReceivedOnFaceExpired(f)) {//neighbor!
+      if (getWipeState(getLastValueReceivedOnFace(f)) == INERT) {
+        canResolve = false;
+      }
+    }
+  }
+
+  if (canResolve) {
+    wipeState = RESOLVE;
     isBrush = false;
     FOREACH_FACE(f) {
       faceColors[f] = 0;
     }
   }
+}
 
-  //send data
-  FOREACH_FACE(f) {
-    byte sendData = (isBrush << 5) + (faceColors[f]);
-    setValueSentOnFace(sendData, f);
+void resolveLoop() {
+  bool canInert = true;//we default to this, but revert it in the loop below if we need to
+
+  FOREACH_FACE(f) {//check around for anyone still WIPING
+    if (!isValueReceivedOnFaceExpired(f)) {//neighbor!
+      if (getWipeState(getLastValueReceivedOnFace(f)) == WIPING) {
+        canInert = false;
+      }
+    }
   }
 
-  //do display
-  if (isBrush) {
-    brushDisplay();
-  } else {
-    canvasDisplay();
+  if (canInert) {
+    wipeState = INERT;
   }
 }
 
@@ -104,9 +163,13 @@ void brushDisplay() {//just show the color on full blast
 }
 
 byte getBrush(byte data) {
-  return (data >> 5);
+  return (data >> 5);//only the first bit
 }
 
-byte getColor(byte data) {
+byte getWipeState(byte data) {
+  return ((data >> 3) & 3);//the second and third bit
+}
+
+byte getColor(byte data) {//the last 3 bits
   return (data & 7);
 }
