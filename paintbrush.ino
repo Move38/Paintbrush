@@ -1,7 +1,7 @@
 enum wipeStates {INERT, WIPING, RESOLVE};
 byte wipeState = INERT;
 
-byte colorHues[7] = {0, 30, 60, 100, 140, 200, 220};
+byte colorHues[7] = {0, 40, 60, 100, 220};
 
 byte faceColors[6] = {0, 0, 0, 0, 0, 0};
 bool isBrush = false;
@@ -90,15 +90,17 @@ void inertLoop() {
   //listen for button presses
   if (buttonSingleClicked()) {//create or recolor brushes
     if (isBrush) {//change to next brush color
-      byte nextColor = (faceColors[0] % 6) + 1;//determine the next color
+      byte nextColor = (faceColors[0] % 4) + 1;//determine the next color
       FOREACH_FACE(f) { //paint all faces that color
         faceColors[f] = nextColor;
       }
     } else {
-      isBrush = true;
-      byte randomColor = random(5) + 1;//just choose a random color
-      FOREACH_FACE(f) { //paint all faces that color
-        faceColors[f] = randomColor;
+      if (isBlank()) {//will only become a brush if blank
+        isBrush = true;
+        byte randomColor = random(3) + 1;//just choose a random color
+        FOREACH_FACE(f) { //paint all faces that color
+          faceColors[f] = randomColor;
+        }
       }
     }
   }
@@ -196,4 +198,16 @@ byte getWipeState(byte data) {
 
 byte getColor(byte data) {//the last 3 bits
   return (data & 7);
+}
+
+bool isBlank () {
+  bool blankBool = true;
+
+  FOREACH_FACE(f) {
+    if (faceColors[f] > 0) {
+      blankBool = false;
+    }
+  }
+
+  return blankBool;
 }
