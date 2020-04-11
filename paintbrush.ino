@@ -10,6 +10,10 @@ Timer brushCycle;
 #define BRUSH_CYCLE_DURATION 100
 byte brushFace = 0;
 
+long timePainted[6];
+#define PAINT_DURATION 1000
+
+
 void setup() {
   randomize();
 }
@@ -57,6 +61,7 @@ void inertLoop() {
           byte neighborColor = getColor(neighborData);
           if (faceColors[f] != neighborColor) {
             faceColors[f] = neighborColor;
+            timePainted[f] = millis();
           }
         }
         else {
@@ -65,6 +70,7 @@ void inertLoop() {
             // this is blank canvas, take on our neighbors color
             byte neighborColor = getColor(neighborData);
             faceColors[f] = neighborColor;
+            timePainted[f] = millis();
           }
         }
       }
@@ -166,7 +172,12 @@ void resolveLoop() {
 void canvasDisplay() {
   FOREACH_FACE(f) {
     if (faceColors[f] > 0) {//colored faces are at full brightness
-      setColorOnFace(makeColorHSB(colorHues[faceColors[f]], 255, 255), f);
+      // fade up the color when recently painted
+      long timeSincePainted = millis() - timePainted[f];
+      if(timeSincePainted > PAINT_DURATION) timeSincePainted = PAINT_DURATION;
+      byte bri = map(timeSincePainted, 0, PAINT_DURATION, 40, 255);
+      byte sat = map(timeSincePainted, 0, PAINT_DURATION, 0, 255);
+      setColorOnFace(makeColorHSB(colorHues[faceColors[f]], sat, bri), f);
     } else {//blank faces are at 0 brightness
       setColorOnFace(makeColorHSB(0, 0, 40), f);
     }
