@@ -102,6 +102,7 @@ void inertLoop() {
   //listen for button presses
   if (buttonSingleClicked()) {//create or recolor brushes
     if (isBrush) {//change to next brush color
+      timeBecamePaintBrush = millis();
       byte nextColor = (faceColors[0] % 4) + 1;//determine the next color
       FOREACH_FACE(f) { //paint all faces that color
         faceColors[f] = nextColor;
@@ -227,8 +228,12 @@ void brushDisplay() {
     brushFace = (brushFace + 1) % 6;
     brushCycle.set(BRUSH_CYCLE_DURATION);
   }
+  long timeSinceBrush = millis() - timeBecamePaintBrush;
+  long duration;
   FOREACH_FACE(f) {
-    setColorOnFace(makeColorHSB((colorHues[faceColors[f]] + 2 * f) % 255, 255, 255), (brushFace + f) % 6);
+    duration = 1000*((brushFace + f) % 6);
+    byte bri = map(timeSinceBrush, 0, duration, 0, 255);
+    setColorOnFace(makeColorHSB((colorHues[faceColors[f]] + 2 * f) % 255, 255, bri), (brushFace + f) % 6);
   }
 }
 
