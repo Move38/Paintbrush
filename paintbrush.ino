@@ -11,10 +11,11 @@ Timer brushCycle;
 #define BRUSH_CYCLE_DURATION 100
 byte brushFace = 0;
 
+Timer brushPaint;
+#define BRUSH_PAINT_DURATION 300
+
 long timePainted[6];
 #define PAINT_DURATION 1000
-
-long timeBecamePaintBrush = 0;
 
 
 void setup() {
@@ -94,7 +95,6 @@ void inertLoop() {
 
       if (brushCheckCount == 6) {//hey, we got 6 hits! become brush!
         isBrush = true;
-        timeBecamePaintBrush = millis();
       }
     }
   }
@@ -109,7 +109,6 @@ void inertLoop() {
     } else {
       if (isBlank()) {//will only become a brush if blank
         isBrush = true;
-        timeBecamePaintBrush = millis();
         byte randomColor = random(3) + 1;//just choose a random color
         FOREACH_FACE(f) { //paint all faces that color
           faceColors[f] = randomColor;
@@ -184,33 +183,33 @@ void canvasDisplay() {
 
       // animate the painting process
       long timeSincePainted = millis() - timePainted[f];
-      if(timeSincePainted > PAINT_DURATION) timeSincePainted = PAINT_DURATION;
+      if (timeSincePainted > PAINT_DURATION) timeSincePainted = PAINT_DURATION;
 
-      if(prevFaceColors[f] == 0) {
+      if (prevFaceColors[f] == 0) {
         // fade up the color when recently painted from blank canvas
         byte bri = map(timeSincePainted, 0, PAINT_DURATION, 40, 255);
         byte sat = map(timeSincePainted, 0, PAINT_DURATION, 0, 255);
-        setColorOnFace(makeColorHSB(colorHues[faceColors[f]], sat, bri), f);      
+        setColorOnFace(makeColorHSB(colorHues[faceColors[f]], sat, bri), f);
       }
       else {
         // blend into the new color from previous color
         byte startHue = colorHues[prevFaceColors[f]];
         byte endHue = colorHues[faceColors[f]];
         byte hue;
-        if(startHue<endHue)
+        if (startHue < endHue)
           hue = map(timeSincePainted, 0, PAINT_DURATION, startHue, endHue);
         else
           hue = map(timeSincePainted, 0, PAINT_DURATION, startHue, endHue + 255);
-        
+
         // possibly fade to white in the middle, but maybe not necessary...
         byte sat;
-        if(timeSincePainted<PAINT_DURATION/2)
-          sat = 255 - map(timeSincePainted, 0, PAINT_DURATION/2, 0, 255);
+        if (timeSincePainted < PAINT_DURATION / 2)
+          sat = 255 - map(timeSincePainted, 0, PAINT_DURATION / 2, 0, 255);
         else
-          sat = map(timeSincePainted, PAINT_DURATION/2, PAINT_DURATION, 0, 255);
+          sat = map(timeSincePainted, PAINT_DURATION / 2, PAINT_DURATION, 0, 255);
         setColorOnFace(makeColorHSB(hue, sat, 255), f);
       }
-      
+
     } else {//blank faces are at 0 brightness
       setColorOnFace(makeColorHSB(0, 0, 40), f);
     }
@@ -226,9 +225,17 @@ void brushDisplay() {
   if (brushCycle.isExpired()) {
     brushFace = (brushFace + 1) % 6;
     brushCycle.set(BRUSH_CYCLE_DURATION);
+    //    prevFaceColors[brushFace] = faceColors[brushFace];
+  }
+  if (brushPaint.isExpired()) {
+    prevFaceColors[brushFace] = faceColors[brushFace];
+    brushPaint.set(BRUSH_PAINT_DURATION);
   }
   FOREACH_FACE(f) {
-    setColorOnFace(makeColorHSB((colorHues[faceColors[f]] + 2 * f) % 255, 255, 255), (brushFace + f) % 6);
+    if (prevFaceColors[f] == 0)
+      setColorOnFace(makeColorHSB((colorHues[prevFaceColors[f]] + 2 * f) % 255, 0, 40), (brushFace + f) % 6);
+    else
+      setColorOnFace(makeColorHSB((colorHues[prevFaceColors[f]] + 2 * f) % 255, 255, 255), (brushFace + f) % 6);
   }
 }
 
