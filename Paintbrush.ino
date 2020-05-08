@@ -3,7 +3,11 @@ byte wipeState = INERT;
 
 byte colorHues[7] = {0, 40, 60, 100, 220};
 
-byte faceColors[6] = {0, 0, 0, 0, 0, 0};
+byte faceColors[6] = {0, 0, 0, 0, 0, 0};//holds current state
+byte saveStates[6] = {0, 0, 0, 0, 0, 0};//holds previous state
+#define SAVE_STATE_DELAY 300
+Timer saveStateTimer;
+
 bool isBrush = false;
 
 Timer brushCycle;
@@ -56,6 +60,7 @@ void inertLoop() {
         if (getBrush(neighborData) == 1) { //this neighbor is a brush
           byte neighborColor = getColor(neighborData);
           if (faceColors[f] != neighborColor) {
+            saveState();
             faceColors[f] = neighborColor;
           }
         }
@@ -64,6 +69,7 @@ void inertLoop() {
           if (faceColors[f] == 0) {
             // this is blank canvas, take on our neighbors color
             byte neighborColor = getColor(neighborData);
+            saveState();
             faceColors[f] = neighborColor;
           }
         }
@@ -112,6 +118,14 @@ void inertLoop() {
     }
   }
 
+  if (buttonDoubleClicked()) {//revert to save state
+    if (!isBrush) {//only canvasses can do this
+      FOREACH_FACE(f) {
+        faceColors[f] = saveStates[f];
+      }
+    }
+  }
+
   if (buttonMultiClicked()) {//if long-pressed, begin field wiping
     if (buttonClickCount() == 3) {
       wipeState = WIPING;
@@ -124,6 +138,18 @@ void inertLoop() {
         wipeState = WIPING;
       }
     }
+  }
+}
+
+void saveState() {
+  //so when we are asked to save, we should make sure we haven't been asked recently
+  if (saveStateTimer.isExpired()) {//ok, so the timer is not running, we can save this state
+    FOREACH_FACE(f) {//put all the colors into the save state
+      saveStates[f] = faceColors[f];
+    }
+
+    //then start the timer so we ignore input for a little bit
+    saveStateTimer.set(SAVE_STATE_DELAY);
   }
 }
 
