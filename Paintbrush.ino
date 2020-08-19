@@ -20,6 +20,11 @@ void setup() {
 
 void loop() {
 
+  // discard the button press from waking up
+  if (hasWoken()) {
+    buttonSingleClicked();
+  }
+
   switch (wipeState) {
     case INERT:
       inertLoop();
