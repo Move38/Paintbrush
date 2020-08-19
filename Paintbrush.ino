@@ -14,6 +14,8 @@ Timer brushCycle;
 #define BRUSH_CYCLE_DURATION 100
 byte brushFace = 0;
 
+bool wakeFrame = false;
+
 void setup() {
   randomize();
 }
@@ -21,8 +23,9 @@ void setup() {
 void loop() {
 
   // discard the button press from waking up
+  wakeFrame = false;
   if (hasWoken()) {
-    buttonSingleClicked();
+    wakeFrame = true;
   }
 
   switch (wipeState) {
@@ -99,7 +102,7 @@ void inertLoop() {
   }
 
   //listen for button presses
-  if (buttonSingleClicked()) {//create or recolor brushes
+  if (buttonSingleClicked() && !wakeFrame) {//create or recolor brushes
     if (isBrush) {//change to next brush color
       byte nextColor = (faceColors[0] % 4) + 1;//determine the next color
       FOREACH_FACE(f) { //paint all faces that color
