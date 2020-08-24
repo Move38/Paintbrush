@@ -77,8 +77,10 @@ void inertLoop() {
           if (faceColors[f] == 0) {
             // this is blank canvas, take on our neighbors color
             byte neighborColor = getColor(neighborData);
-            saveState();
-            faceColors[f] = neighborColor;
+            if (neighborColor != faceColors[f]) {
+              saveState();
+              faceColors[f] = neighborColor;
+            }
           }
         }
       }
@@ -102,7 +104,7 @@ void inertLoop() {
   }
 
   //listen for button presses
-  if (buttonSingleClicked() && !wakeFrame) {//create or recolor brushes
+  if (buttonSingleClicked() && wakeFrame == false) {//create or recolor brushes
     if (isBrush) {//change to next brush color
       byte nextColor = (faceColors[0] % 4) + 1;//determine the next color
       FOREACH_FACE(f) { //paint all faces that color
@@ -205,6 +207,12 @@ void canvasDisplay() {
       setColorOnFace(makeColorHSB(0, 0, 40), f);
     }
   }
+
+  //  //debug graphics for saveState
+  //  if (!saveStateTimer.isExpired()) {
+  //    byte timerProgress = map(saveStateTimer.getRemaining(), 0, SAVE_STATE_DELAY, 0, 255);
+  //    setColor(dim(ORANGE, timerProgress));
+  //  }
 }
 
 void brushDisplay() {
