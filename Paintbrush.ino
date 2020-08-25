@@ -1,3 +1,19 @@
+/*
+    Paintbrush
+    by Carol Mertz and Mary McKenzie
+    for Blinks by Move38
+    
+    Rules: https://move38.com/games
+    
+    --------------------
+    Blinks by Move38
+    Brought to life via Kickstarter 2020
+    
+    @madewithblinks
+    www.move38.com
+    --------------------
+*/
+
 enum wipeStates {INERT, WIPING, RESOLVE};
 byte wipeState = INERT;
 
@@ -216,25 +232,22 @@ void canvasDisplay() {
 }
 
 void brushDisplay() {
-  //  Option 1: simple pulse for brush
-  //  setColor(makeColorHSB(colorHues[faceColors[0]], 255, 63 + (3 * sin8_C(millis()/15))/4));
-
   //  wipe the face with the color chasing it's tail
   //  slight hue offset to feel painterly
   if (brushCycle.isExpired()) {
     brushFace = (brushFace + 1) % 6;
     brushCycle.set(BRUSH_CYCLE_DURATION);
   }
-  
+
   // Adjust the offset of the paint hue to make each of the hue shifts subtle and noticeable
   int brushColorOffset = 2;
-  if(faceColors[0] == 1) {  // YELLOW - cheat this one orange
+  if (faceColors[0] == 1) { // YELLOW - cheat this one orange
     brushColorOffset = -2;
   }
-  else if(faceColors[0] == 3) { // BLUE - compensate for large blue range
+  else if (faceColors[0] == 3) { // BLUE - compensate for large blue range
     brushColorOffset = 3;
   }
-  
+
   FOREACH_FACE(f) {
     setColorOnFace(makeColorHSB((colorHues[faceColors[f]] + brushColorOffset * f) % 255, 255, 255), (brushFace + f) % 6);
   }
