@@ -1,7 +1,7 @@
 enum wipeStates {INERT, WIPING, RESOLVE};
 byte wipeState = INERT;
 
-byte colorHues[7] = {0, 40, 60, 100, 220};
+byte colorHues[] = {0, 40, 60, 100, 220};
 
 byte faceColors[6] = {0, 0, 0, 0, 0, 0};//holds current state
 byte saveStates[6] = {0, 0, 0, 0, 0, 0};//holds previous state
@@ -225,8 +225,18 @@ void brushDisplay() {
     brushFace = (brushFace + 1) % 6;
     brushCycle.set(BRUSH_CYCLE_DURATION);
   }
+  
+  // Adjust the offset of the paint hue to make each of the hue shifts subtle and noticeable
+  int brushColorOffset = 2;
+  if(faceColors[0] == 1) {  // YELLOW - cheat this one orange
+    brushColorOffset = -2;
+  }
+  else if(faceColors[0] == 3) { // BLUE - compensate for large blue range
+    brushColorOffset = 3;
+  }
+  
   FOREACH_FACE(f) {
-    setColorOnFace(makeColorHSB((colorHues[faceColors[f]] + 2 * f) % 255, 255, 255), (brushFace + f) % 6);
+    setColorOnFace(makeColorHSB((colorHues[faceColors[f]] + brushColorOffset * f) % 255, 255, 255), (brushFace + f) % 6);
   }
 }
 
