@@ -2,13 +2,13 @@
     Paintbrush
     by Carol Mertz and Mary McKenzie
     for Blinks by Move38
-    
+
     Rules: https://move38.com/games
-    
+
     --------------------
     Blinks by Move38
     Brought to life via Kickstarter 2020
-    
+
     @madewithblinks
     www.move38.com
     --------------------
@@ -58,7 +58,7 @@ void loop() {
 
   //send data
   FOREACH_FACE(f) {
-    byte sendData = (isBrush << 5) + (wipeState << 3) + (faceColors[f]);
+    byte sendData = (isBrush << 5) | (wipeState << 3) | (faceColors[f]);
     setValueSentOnFace(sendData, f);
   }
 
@@ -155,13 +155,19 @@ void inertLoop() {
   if (buttonMultiClicked()) {//if long-pressed, begin field wiping
     if (buttonClickCount() == 3) {
       wipeState = WIPING;
+      FOREACH_FACE(f) {
+        faceColors[f] = 5; //this is the special "wiping" color
+      }
     }
   }
 
   FOREACH_FACE(f) {//check around for anyone in WIPING
     if (!isValueReceivedOnFaceExpired(f)) {//neighbor!
-      if (getWipeState(getLastValueReceivedOnFace(f)) == WIPING) {
+      if (getWipeState(getLastValueReceivedOnFace(f)) == WIPING && getColor(getLastValueReceivedOnFace(f)) == 5) {//we only accept people in the right state AND the special color handshake
         wipeState = WIPING;
+        FOREACH_FACE(f) {
+          faceColors[f] = 5; //this is the special "wiping" color
+        }
       }
     }
   }
