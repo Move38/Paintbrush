@@ -155,6 +155,8 @@ void inertLoop() {
   if (buttonMultiClicked()) {//if long-pressed, begin field wiping
     if (buttonClickCount() == 3) {
       wipeState = WIPING;
+      isBrush = false;
+
       FOREACH_FACE(f) {
         faceColors[f] = 5; //this is the special "wiping" color
       }
@@ -165,6 +167,8 @@ void inertLoop() {
     if (!isValueReceivedOnFaceExpired(f)) {//neighbor!
       if (getWipeState(getLastValueReceivedOnFace(f)) == WIPING && getColor(getLastValueReceivedOnFace(f)) == 5) {//we only accept people in the right state AND the special color handshake
         wipeState = WIPING;
+        isBrush = false;
+
         FOREACH_FACE(f) {
           faceColors[f] = 5; //this is the special "wiping" color
         }
@@ -223,18 +227,13 @@ void resolveLoop() {
 
 void canvasDisplay() {
   FOREACH_FACE(f) {
-    if (faceColors[f] > 0) {//colored faces are at full brightness
+    if (faceColors[f] > 0 && faceColors[f] < 5) {//colored faces are at full brightness
       setColorOnFace(makeColorHSB(colorHues[faceColors[f]], 255, 255), f);
     } else {//blank faces are at 0 brightness
       setColorOnFace(makeColorHSB(0, 0, 40), f);
     }
   }
 
-  //  //debug graphics for saveState
-  //  if (!saveStateTimer.isExpired()) {
-  //    byte timerProgress = map(saveStateTimer.getRemaining(), 0, SAVE_STATE_DELAY, 0, 255);
-  //    setColor(dim(ORANGE, timerProgress));
-  //  }
 }
 
 void brushDisplay() {
