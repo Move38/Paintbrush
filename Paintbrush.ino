@@ -17,7 +17,7 @@
 enum wipeStates {INERT, WIPING, RESOLVE};
 byte wipeState = INERT;
 
-byte colorHues[] = {0, 40, 60, 100, 220};
+byte colorHues[] = {0, 40, 60, 100, 220, 0};
 
 byte faceColors[6] = {0, 0, 0, 0, 0, 0};//holds current state
 byte saveStates[6] = {0, 0, 0, 0, 0, 0};//holds previous state
@@ -31,6 +31,10 @@ Timer brushCycle;
 byte brushFace = 0;
 
 bool wakeFrame = false;
+
+long timePainted[6];
+#define PAINT_DURATION 1000
+long timeBecamePaintBrush = 0;
 
 void setup() {
   randomize();
@@ -86,6 +90,7 @@ void inertLoop() {
           if (faceColors[f] != neighborColor) {
             saveState();
             faceColors[f] = neighborColor;
+            timePainted[f] = millis();
           }
         }
         else {
@@ -96,6 +101,7 @@ void inertLoop() {
             if (neighborColor != faceColors[f]) {
               saveState();
               faceColors[f] = neighborColor;
+              timePainted[f] = millis();
             }
           }
         }
@@ -115,6 +121,7 @@ void inertLoop() {
 
       if (brushCheckCount == 6) {//hey, we got 6 hits! become brush!
         isBrush = true;
+        timeBecamePaintBrush = millis();
       }
     }
   }
@@ -129,6 +136,7 @@ void inertLoop() {
     } else {
       if (isBlank()) {//will only become a brush if blank
         isBrush = true;
+        timeBecamePaintBrush = millis();
         byte randomColor = random(3) + 1;//just choose a random color
         FOREACH_FACE(f) { //paint all faces that color
           faceColors[f] = randomColor;
@@ -141,6 +149,7 @@ void inertLoop() {
     isBrush = false;
     FOREACH_FACE(f) {
       faceColors[f] = 0;
+      timePainted[f] = 0;
     }
   }
 
@@ -228,12 +237,44 @@ void resolveLoop() {
 void canvasDisplay() {
   FOREACH_FACE(f) {
     if (faceColors[f] > 0 && faceColors[f] < 5) {//colored faces are at full brightness
-      setColorOnFace(makeColorHSB(colorHues[faceColors[f]], 255, 255), f);
+      // fade up the color when recently painted
+
+      // animate the painting process
+      long timeSincePainted = millis() - timePainted[f];
+      if (timeSincePainted > PAINT_DURATION) timeSincePainted = PAINT_DURATION;
+      byte bri = map(timeSincePainted, 0, PAINT_DURATION, 40, 255);
+      byte sat = map(timeSincePainted, 0, PAINT_DURATION, 0, 255);
+      setColorOnFace(makeColorHSB(colorHues[faceColors[f]], sat, bri), f);
+
+      if (saveStates[f] == 0) {
+        // fade up the color when recently painted from blank canvas
+        byte bri = map(timeSincePainted, 0, PAINT_DURATION, 40, 255);
+        byte sat = map(timeSincePainted, 0, PAINT_DURATION, 0, 255);
+        setColorOnFace(makeColorHSB(colorHues[faceColors[f]], sat, bri), f);
+      }
+      else {
+        // blend into the new color from previous color
+        byte startHue = colorHues[saveStates[f]];
+        byte endHue = colorHues[faceColors[f]];
+        byte hue;
+        if (startHue < endHue)
+          hue = map(timeSincePainted, 0, PAINT_DURATION, startHue, endHue);
+        else
+          hue = map(timeSincePainted, 0, PAINT_DURATION, startHue, endHue + 255);
+
+        // possibly fade to white in the middle, but maybe not necessary...
+        byte sat;
+        if (timeSincePainted < PAINT_DURATION / 2)
+          sat = 255 - map(timeSincePainted, 0, PAINT_DURATION / 2, 0, 255);
+        else
+          sat = map(timeSincePainted, PAINT_DURATION / 2, PAINT_DURATION, 0, 255);
+        setColorOnFace(makeColorHSB(hue, sat, 255), f);
+      }
+
     } else {//blank faces are at 0 brightness
       setColorOnFace(makeColorHSB(0, 0, 40), f);
     }
   }
-
 }
 
 void brushDisplay() {
